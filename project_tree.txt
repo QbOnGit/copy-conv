@@ -1,0 +1,16 @@
+media_convert_tool/
+│
+├── core/                            # Logic modules
+│   ├── scanner.py                   # Traverses directory & builds checksums JSONs
+│   ├── convert_images.py            # Converts HEIC → JPG, copies JPG/etc
+│   ├── convert_videos.py            # Converts MOV → MP4, copies MP4/etc
+│   ├── convert_slowmo.py            # Handles slow-motion MOVs or similar
+│   ├── config.py                    # Central definitions (extensions, categories)
+│   └── utils.py                     # Helper functions (validation, prompts, progress)
+│
+├── cli/                             # CLI prompts and user interaction
+│   └── main_convert.py              # Main CLI controller (entry point)
+├── .pipreqs-ignore                  # What pipreqs omit to scan
+├── .gitignore                       # What git omit to commit
+├── README.md                        # Full app description & usage
+└── requirements.txt                 # Tool dependencies like ffmpeg etc.
