@@ -1,7 +1,7 @@
 media_convert_tool/
 │
 ├── cli/                             # CLI prompts and user interaction
-│   └── main_convert.py              # Main CLI controller (entry point)
+│   └── main_convert.py              # Main CLI controller
 │
 ├── core/                            # Logic modules
 │   ├── scanner.py                   # Traverses directory & builds checksums JSONs
