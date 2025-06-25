@@ -1,8 +1,8 @@
 # core/utils.py
 
-import os, shutil, subprocess, logging
-from core.config import OUTPUT_VIDEO_EXT, LOG_FORMAT
-from datetime import datetime
+import os, shutil, subprocess, logging, json
+from core.config import OUTPUT_VIDEO_EXT, LOG_FORMAT, REQUIRED_TOOLS, OUTPUT_IMAGE_EXT
+from datetime import datetime, timedelta
 
 def create_timestamped_log_path(output_dir, prefix):
     """
@@ -89,5 +89,69 @@ def convert_mov_to_mp4(src_path, dst_path_without_ext):
     ], check=True)
     subprocess.run(["exiftool", "-TagsFromFile", src_path, "-overwrite_original", dst_mp4], check=True)
 
+def convert_heic_to_jpg(src_path, dst_path_without_ext):
+    dst_jpg = dst_path_without_ext + OUTPUT_IMAGE_EXT
+    subprocess.run(["heif-convert", src_path, dst_jpg], check=True)
+    subprocess.run(["exiftool", "-TagsFromFile", src_path, "-overwrite_original", dst_jpg], check=True)
+
+
 def init_logging(log_path):
     logging.basicConfig(filename=log_path, level=logging.INFO, format=LOG_FORMAT)
+
+
+def print_progress(idx, total, start_time, emoji="▶️"):
+    elapsed = datetime.now() - start_time
+    percent = (idx / total) * 100
+    eta = timedelta(seconds=int((elapsed.total_seconds() / idx) * (total - idx)))
+    print(f"{emoji} {idx}/{total} ({percent:.1f}%) — Elapsed: {elapsed} — ETA: ~{eta}", end="\r")
+
+def load_checksum_map(json_path, required_tools_key):
+    if not os.path.isfile(json_path):
+        print(f"❌ Missing input file: {json_path}")
+        return None
+    check_required_tools(REQUIRED_TOOLS[required_tools_key])
+    with open(json_path, "r") as f:
+        return json.load(f)
+
+def ensure_subfolder(output_dir, subfolder):
+    full = os.path.join(output_dir, subfolder)
+    os.makedirs(full, exist_ok=True)
+    return full
+
+def setup_logging(output_dir, prefix):
+    log_path = create_timestamped_log_path(output_dir, prefix)
+    init_logging(log_path)
+    return log_path
+
+def process_template(json_path, output_dir, subfolder, required_tools_key, process_func, filename_transform_func=None, emoji="▶️"):
+    checksum_map = load_checksum_map(json_path, required_tools_key)
+    if checksum_map is None:
+        return
+
+    subdir = ensure_subfolder(output_dir, subfolder)
+    log_path = setup_logging(output_dir, f"log_{subfolder}")
+    print(f"{emoji} Starting processing of {len(checksum_map)} files into /{subfolder}...")
+    total = len(checksum_map)
+    start_time = datetime.now()
+    failures = 0
+
+    for idx, (checksum, paths) in enumerate(checksum_map.items(), start=1):
+        src = paths[0]
+        original_name = os.path.basename(src)
+        final_name = filename_transform_func(original_name) if filename_transform_func else original_name
+        dst_path_wo_ext = os.path.splitext(os.path.join(subdir, final_name))[0]
+
+        try:
+            process_func(src, dst_path_wo_ext)
+            logging.info(f"Processed: {src} → {dst_path_wo_ext}")
+        except Exception as e:
+            failures += 1
+            logging.error(f"Error processing {src}: {e}")
+
+        print_progress(idx, total, start_time, emoji)
+
+    print(f"\n✅ Done. Log saved to {log_path}")
+    if failures:
+        print(f"⚠️ {failures} file(s) failed. See log for details.")
+    logging.shutdown()
+

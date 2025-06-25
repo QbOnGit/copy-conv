@@ -1,5 +1,8 @@
 media_convert_tool/
 │
+├── cli/                             # CLI prompts and user interaction
+│   └── main_convert.py              # Main CLI controller (entry point)
+│
 ├── core/                            # Logic modules
 │   ├── scanner.py                   # Traverses directory & builds checksums JSONs
 │   ├── convert_images.py            # Converts HEIC → JPG, copies JPG/etc
@@ -8,8 +11,9 @@ media_convert_tool/
 │   ├── config.py                    # Central definitions (extensions, categories)
 │   └── utils.py                     # Helper functions (validation, prompts, progress)
 │
-├── cli/                             # CLI prompts and user interaction
-│   └── main_convert.py              # Main CLI controller (entry point)
+├── gui/                             #
+│   └── main_gui.py                  # Main GUI controller (entry point)
+│
 ├── .pipreqs-ignore                  # What pipreqs omit to scan
 ├── .gitignore                       # What git omit to commit
 ├── README.md                        # Full app description & usage

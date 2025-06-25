@@ -1,12 +1,13 @@
 # cli/main_convert.py
 
-import sys
+import sys, os
 from core.config import IPHONE_IMAGE_EXTS, NON_IPHONE_IMAGE_EXTS, IPHONE_VIDEO_EXTS, NON_IPHONE_VIDEO_EXTS
 from core.utils import (
     get_source_directory,
     get_destination_directory,
     yes_no_prompt
 )
+from datetime import datetime
 from core.scanner import scan_and_deduplicate
 from core.convert_images import process_images
 from core.convert_videos import process_videos
@@ -41,11 +42,16 @@ def main():
     source_dir = get_source_directory("Source path: ")
     output_dir = get_destination_directory("Destination path: ")
 
+    # Create timestamped root subdir
+    timestamp = datetime.now().strftime("copy-conv_%Y%m%d_%H%M%S")
+    final_output_dir = os.path.join(output_dir, timestamp)
+    os.makedirs(final_output_dir)
+
     user_options = prompt_user_options()
 
     print("\n📝 Summary:")
     print(f"Source directory:      {source_dir}")
-    print(f"Destination directory: {output_dir}")
+    print(f"Destination directory: {final_output_dir}")
     for key in ["photos", "videos", "slowmo"]:
         opt = user_options[key]
         status = "✓" if opt["include"] else "✗"
@@ -56,15 +62,14 @@ def main():
         print("❌ Aborted.")
         sys.exit(0)
 
-    json_files = scan_and_deduplicate(source_dir, user_options, output_dir)
+    json_files = scan_and_deduplicate(source_dir, user_options, final_output_dir)
 
-    # Conversion steps
-    if json_files["photos"]:
-        process_images(json_files["photos"], output_dir)
-    if json_files["videos"]:
-        process_videos(json_files["videos"], output_dir)
-    if json_files["slowmo"]:
-        process_slowmo(json_files["slowmo"], output_dir)
+    if json_files.get("photos"):
+        process_images(json_files["photos"], final_output_dir)
+    if json_files.get("videos"):
+        process_videos(json_files["videos"], final_output_dir)
+    if json_files.get("slowmo"):
+        process_slowmo(json_files["slowmo"], final_output_dir)
 
     print("\n✅ All steps completed successfully.")
 
